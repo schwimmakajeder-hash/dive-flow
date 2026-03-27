@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIVE-FLOW | Modulares Tauchlogbuch</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet Maps CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a192f">
+
+    <style>
+        @media print {
+
+            .sidebar,
+            .btn-primary,
+            .modal-header .close-btn,
+            .nav-links,
+            .bubbles,
+            .user-profile,
+            header button {
+                display: none !important;
+            }
+
+            .app-container {
+                display: block;
+            }
+
+            .content-area {
+                margin: 0;
+                padding: 0;
+            }
+
+            .glass-panel {
+                box-shadow: none !important;
+                border: 1px solid #000 !important;
+                background: white !important;
+                color: black !important;
+            }
+
+            .stat-card .value,
+            .stat-card h3 {
+                color: black !important;
+            }
+
+            body {
+                background: white !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Mobile Top Header -->
+    <header class="mobile-top-bar glass-panel">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="logo.png" alt="Logo" style="width: 24px; height: 24px; filter: drop-shadow(0 0 4px var(--clr-accent));">
+            <h2 style="font-size: 1.1rem; color: var(--clr-accent); margin: 0;">DIVE-FLOW</h2>
+        </div>
+        <div id="sync-status-mobile" style="font-size: 0.6rem; color: var(--clr-accent);">☁️ Sync</div>
+    </header>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar glass-panel">
+            <div class="brand">
+                <div class="logo-icon">
+                    <img src="logo.png" alt="Logo" style="width: 40px; height: 40px; filter: drop-shadow(0 0 8px var(--clr-accent));">
+                </div>
+                <div>
+                   <h1>DIVE-FLOW</h1>
+                   <div id="sync-status" style="font-size: 0.6rem; color: var(--clr-text-muted);">☁️ Nicht synchronisiert</div>
+                </div>
+                <div id="offline-tag" class="status-tag" style="display: none;">OFFLINE</div>
+            </div>
+            
+            <div id="auth-section" style="margin-bottom: 24px; padding: 12px; border: 1px dashed var(--clr-accent-dim); border-radius: 8px;">
+                <button id="btn-login" class="btn-primary" style="width: 100%; font-size: 0.8rem; padding: 8px;">☁️ In Cloud sichern </button>
+                <div id="user-display" style="display: none; font-size: 0.75rem; text-align: center;">
+                    <span id="user-email" style="display: block; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis;"></span>
+                    <button id="btn-logout" class="btn-primary" style="background: transparent; border: 1px solid var(--clr-warning); color: var(--clr-warning); width: 100%; font-size: 0.7rem; padding: 4px;">Abmelden</button>
+                </div>
+            </div>
+
+            <ul class="nav-links">
+                <li data-target="module-profile">
+                    <span class="icon">👤</span>
+                    <span class="text">Taucher-Profil</span>
+                </li>
+                <li class="active" data-target="module-core">
+                    <span class="icon">📊</span>
+                    <span class="text">Dashboard & Basic Log</span>
+                </li>
+                <li data-target="module-mindful">
+                    <span class="icon">🧘</span>
+                    <span class="text">Mindful & Flow</span>
+                </li>
+                <li data-target="module-species">
+                    <span class="icon">🐠</span>
+                    <span class="text">Pokédex (Species)</span>
+                </li>
+                <li data-target="module-geo">
+                    <span class="icon">🗺️</span>
+                    <span class="text">Geo & Maps</span>
+                </li>
+                <li data-target="module-gear">
+                    <span class="icon">🤿</span>
+                    <span class="text">Gear & Maintenance</span>
+                </li>
+                <li data-target="module-buddy">
+                    <span class="icon">🤝</span>
+                    <span class="text">Buddy & Sync</span>
+                </li>
+                <li data-target="module-planning">
+                    <span class="icon">🧭</span>
+                    <span class="text">Tauchgangsplanung</span>
+                </li>
+                <li data-target="module-system">
+                    <span class="icon">⚙️</span>
+                    <span class="text">System & Module</span>
+                </li>
+            </ul>
+
+            <div class="user-profile">
+                <div class="avatar" id="sidebar-avatar"></div>
+                <div class="user-info">
+                    <span class="name" id="sidebar-user-name">Diver 01</span>
+                    <span class="title" id="sidebar-user-title">Advanced Open Water</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="content-area">
+            <!-- Module: Core Dashboard -->
+            <section id="module-core" class="module-section active">
+                <header class="module-header">
+                    <h2>Dein Dashboard</h2>
+                    <p>Willkommen zurück im Wasser. Hier ist eine Übersicht deiner letzten Aktivitäten.</p>
+                </header>
+
+                <div class="dashboard-grid">
+                    <div class="stat-card glass-panel" style="min-width: 140px;">
+                        <h3>Total Dives</h3>
+                        <div class="value">42</div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <h3>Max Tiefe</h3>
+                        <div class="value">35.4m</div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <h3>Durchschn. Entspannung (Vorher)</h3>
+                        <div class="value highlight" id="stat-avg-flow-pre">0.0</div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <h3>Durchschn. Entspannung (Nachher)</h3>
+                        <div class="value highlight" id="stat-avg-flow-post">0.0</div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <h3>Avg. Flow & Focus</h3>
+                        <div class="value highlight" id="stat-avg-flow-index" style="color: var(--clr-accent);">0.0</div>
+                    </div>
+                </div>
+
+                <div class="dive-list-container glass-panel" style="margin-top: 32px; padding: 24px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h3>Meine Tauchgänge</h3>
+                        <button class="btn-primary" onclick="openNewLogModal()">+ Neuer Dive (Stammdaten)</button>
+                    </div>
+                    <div id="dive-list" style="max-height: 400px; overflow-y: auto;">
+                        <!-- Dive items will be injected here -->
+                        <p style="color: var(--clr-text-muted); text-align: center; padding: 40px;">Noch keine
+                            Tauchgänge vorhanden.</p>
+                    </div>
+                </div>
+
+                <div id="active-dive-banner" class="glass-panel"
+                    style="margin-top: 32px; padding: 16px; border: 1px solid var(--clr-accent); display: none;">
+                    <p>👉 Aktuell ausgewählt: <strong id="selected-dive-name">---</strong>. Klicke ein Modul in der
+                        Sidebar für Details.</p>
+                </div>
+            </section>
+
+            <!-- Module: Profile -->
+            <section id="module-profile" class="module-section">
+                <header class="module-header">
+                    <h2>Taucher-Profil</h2>
+                    <p>Verwalte deine persönlichen Daten und Zertifizierungen.</p>
+                </header>
+                <div class="glass-panel" style="padding: 32px;">
+                    <form id="profile-form">
+                        <div class="form-row" style="margin-bottom: 24px; align-items: center;">
+                            <div class="profile-photo-container">
+                                <div id="profile-preview" class="avatar-large"></div>
+                                <button type="button" class="btn-primary" onclick="document.getElementById('profile-upload').click()">Foto hochladen</button>
+                                <input type="file" id="profile-upload" style="display: none;" accept="image/*">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="prof-name">Name</label>
+                                <input type="text" id="prof-name" class="form-control" value="Diver 01">
+                            </div>
+                            <div class="form-group">
+                                <label for="prof-cert">Haupt-Brevet</label>
+                                <input type="text" id="prof-cert" class="form-control" value="Advanced Open Water">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="prof-association">Verband (z.B. PADI, SSI)</label>
+                                <input type="text" id="prof-association" class="form-control" value="PADI">
+                            </div>
+                            <div class="form-group">
+                                <label for="prof-insurance">Versicherung (Nr.)</label>
+                                <input type="text" id="prof-insurance" class="form-control" placeholder="DAN oder AquaMed">
+                            </div>
+                        </div>
+
+                        <div class="form-row" style="margin-top: 24px;">
+                            <div class="form-group" style="padding: 16px; border: 1px dashed var(--clr-accent-dim); border-radius: 12px; text-align: center;">
+                                <label style="display: block; margin-bottom: 8px;">📇 Tauchschein (Brevet-Foto)</label>
+                                <div id="cert-photo-preview" style="width: 100%; height: 120px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 12px; background-size: contain; background-repeat: no-repeat; background-position: center;"></div>
+                                <button type="button" class="btn-primary" onclick="document.getElementById('cert-upload').click()">Schein hochladen</button>
+                                <input type="file" id="cert-upload" style="display: none;" accept="image/*">
+                            </div>
+                        </div>
+
+                        <h4 style="color: var(--clr-accent); margin: 24px 0 12px 0;">Spezial- & Sonderausweise</h4>
+                        <div id="special-certs-list" style="margin-bottom: 16px;">
+                            <!-- Special certs will be added here -->
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-bottom: 24px;">
+                            <input type="text" id="new-special-cert" class="form-control" placeholder="Spezialkurs (z.B. Nitrox, Deep, Bio)">
+                            <button type="button" class="btn-primary" onclick="window.addSpecialCert()">Hinzufügen</button>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary">Profil & Ausweise speichern</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Placeholder for other modules -->
+            <section id="module-mindful" class="module-section">
+                <header class="module-header">
+                    <h2>Mindful Diving</h2>
+                    <p>Stresslevel, Wohlbefinden und Entspannung.</p>
+                </header>
+                <div class="glass-panel" style="padding: 32px;">
+                    <div id="mindful-no-selection" style="text-align: center; padding: 40px;">
+                        <p style="color: var(--clr-text-muted);">Bitte wähle zuerst einen Tauchgang im Dashboard aus, um
+                            die Mindful-Daten zu sehen oder zu bearbeiten.</p>
+                        <button class="btn-primary" style="margin-top: 16px;"
+                            onclick="document.querySelector('[data-target=\'module-core\']').click()">Zum
+                            Dashboard</button>
+                    </div>
+
+                    <div id="mindful-content" style="display: none;">
+                        <h3>Mental-Analyse: <span id="mind-dive-title"></span></h3>
+                        <div style="margin-top: 24px;">
+                            <label>Stimmung bei diesem Dive</label>
+                            <div class="mood-selector-static" id="mind-mood-display"
+                                style="font-size: 3rem; margin: 16px 0;">
+                                🧘
+                            </div>
+                        </div>
+
+                        <div class="form-row" style="margin-top: 24px;">
+                            <div class="form-group">
+                                <label>Stress vorher (1-10)</label>
+                                <div class="value-display" id="mind-val-stress-pre">--</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Stress nachher (1-10)</label>
+                                <div class="value-display" id="mind-val-stress-post">--</div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Flow-Index (1-10)</label>
+                                <div class="value-display highlight" id="mind-val-flow">--</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Puls (BPM)</label>
+                                <div class="value-display" id="mind-val-heart">--</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 32px;">
+                            <h4>Zusammenfassung</h4>
+                            <p id="mind-summary-text" style="line-height: 1.6; color: var(--clr-text-muted);"></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="module-species" class="module-section">
+                <header class="module-header">
+                    <h2>Meereslebewesen Pokédex</h2>
+                    <p>Identifiziere Arten per Foto oder KI-Suche.</p>
+                </header>
+                <div class="glass-panel" style="padding: 32px;">
+                    <div id="pokedex-no-selection" style="text-align: center; padding: 40px;">
+                        <p style="color: var(--clr-text-muted);">Wähle einen Tauchgang aus, um gesehene Tiere zu
+                            speichern.</p>
+                    </div>
+
+                    <div id="pokedex-content" style="display: none;">
+                        <div class="form-row">
+                            <div class="glass-panel" style="flex: 1; padding: 20px; text-align: center;">
+                                <h4>📸 Foto-Upload (AI-Scan)</h4>
+                                <p style="font-size: 0.85rem; color: var(--clr-text-muted); margin-bottom: 16px;">Verschwinde tiefer in den Abgrund. Unsere KI erkennt was du siehst.</p>
+                                <div id="pokedex-upload-container"
+                                    style="border: 2px dashed var(--clr-accent-dim); padding: 30px; border-radius: 12px; margin-bottom: 16px; cursor: pointer;">
+                                    <span style="font-size: 2.5rem; display: block; margin-bottom: 10px;">📸</span>
+                                    <span>Klicke zum Scannen</span>
+                                </div>
+                                <input type="file" id="pokedex-file" style="display: none;" accept="image/*">
+                            </div>
+                            <div class="glass-panel" style="flex: 1; padding: 20px; text-align: center;">
+                                <h4>🔍 Tier beschreiben</h4>
+                                <p style="font-size: 0.85rem; color: var(--clr-text-muted); margin-bottom: 16px;">Gib
+                                    Merkmale ein (z.B. "gelber Fisch mit Punkten").</p>
+                                <input type="text" id="pokedex-search" class="form-control"
+                                    placeholder="Beschreibung...">
+                                <button class="btn-primary" style="margin-top: 12px;"
+                                    onclick="mockPokedexSearch()">Suchen</button>
+                            </div>
+                        </div>
+
+                        <div id="pokedex-result"
+                            style="margin-top: 32px; display: none; background: rgba(100,255,218,0.05); padding: 24px; border-radius: 12px; border: 1px solid var(--clr-accent);">
+                            <!-- Results inject here -->
+                        </div>
+
+                        <div id="pokedex-saved-species" style="margin-top: 24px; border-top: 1px solid rgba(100,255,218,0.1); padding-top: 24px;">
+                            <!-- List of saved animals inject here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Module: System & Settings -->
+            <section id="module-system" class="module-section">
+                <header class="module-header">
+                    <h2>System & Module</h2>
+                    <p>Konfiguriere Dein persönliches Logbuch-Erlebnis.</p>
+                </header>
+                <div class="glass-panel" style="padding: 32px;">
+                    <h3>Module aktivieren/deaktivieren</h3>
+                    <div id="module-toggles" style="margin-top: 24px;">
+                        <!-- Hierarchical checkboxes for modules -->
+                        <div class="form-row" style="margin-bottom: 24px;">
+                            <h4 style="color: var(--clr-accent); width: 100%; margin-bottom: 12px;">Hauptmodule</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; width: 100%;">
+                                <label class="custom-checkbox"><input type="checkbox" data-mod="mindful" checked><span class="checkmark"></span>Mindful & Flow</label>
+                                <label class="custom-checkbox"><input type="checkbox" data-mod="species" checked><span class="checkmark"></span>Pokédex</label>
+                                <label class="custom-checkbox"><input type="checkbox" data-mod="geo" checked><span class="checkmark"></span>Geo & Maps</label>
+                                <label class="custom-checkbox"><input type="checkbox" data-mod="gear" checked><span class="checkmark"></span>Gear</label>
+                                <label class="custom-checkbox"><input type="checkbox" data-mod="buddy" checked><span class="checkmark"></span>Buddy</label>
+                            </div>
+                        </div>
+
+                        <div class="form-row" style="margin-bottom: 24px;">
+                            <h4 style="color: var(--clr-accent); width: 100%; margin-bottom: 12px;">Log-Eingabefelder (Sichtbarkeit)</h4>
+                            <div id="log-field-toggles" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; width: 100%;">
+                                <!-- Injected via JS -->
+                            </div>
+                        </div>
+
+                        <div class="form-row" style="margin-bottom: 24px;">
+                            <h4 style="color: var(--clr-accent); width: 100%; margin-bottom: 12px;">Eigene Felder hinzufügen</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 120px; gap: 10px; width: 100%;">
+                                <input type="text" id="new-custom-field-name" class="form-control" placeholder="Feldname (z.B. Kamerasetup)">
+                                <select id="new-custom-field-size" class="form-control">
+                                    <option value="form-field-full">Ganze Breite</option>
+                                    <option value="form-field-md">Halbe Breite</option>
+                                    <option value="form-field-sm">Drittel Breite</option>
+                                </select>
+                                <button class="btn-primary" onclick="window.addNewCustomField()">Hinzufügen</button>
+                            </div>
+                            <div id="custom-fields-management" style="margin-top: 16px; width: 100%;">
+                                <!-- Management list for custom fields -->
+                            </div>
+                        </div>
+                    </div>
+                    <p style="margin-top: 24px; font-size: 0.9rem; color: var(--clr-text-muted);">Nur aktivierte Module
+                        werden in der Navigation und den Tauchgangs-Details angezeigt.</p>
+                </div>
+            </section>
+
+            <section id="module-geo" class="module-section">
+                <header class="module-header">
+                    <h2>Geo & Maps</h2>
+                    <p>Tracke deine Tauchplätze weltweit auf der interaktiven Karte.</p>
+                </header>
+                <div class="glass-panel" style="padding: 24px;">
+                    <div id="geo-no-selection" style="text-align: center; padding: 40px;">
+                        <p style="color: var(--clr-text-muted);">Wähle einen Tauchgang aus, um die Karte zu sehen.</p>
+                        <button class="btn-primary" style="margin-top: 16px;"
+                            onclick="document.querySelector('[data-target=\'module-core\']').click()">Zum
+                            Dashboard</button>
+                    </div>
+
+                    <div id="geo-content" style="display: none;">
+                        <div id="map-detail"
+                            style="height: 400px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--clr-accent);">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Koordinaten</label>
+                                <div id="geo-coords-display"
+                                    style="font-size: 1.1rem; font-weight: 600; color: var(--clr-accent);">--</div>
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: flex-end;">
+                                <button class="btn-primary" style="font-size: 0.85rem;" onclick="mockSpotLookup()">📍
+                                    Spot-Details abrufen</button>
+                            </div>
+                        </div>
+
+                        <div id="spot-info"
+                            style="margin-top: 24px; background: rgba(100,255,218,0.05); padding: 20px; border-radius: 8px; display: none;">
+                            <!-- Mocked Info -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="module-gear" class="module-section">
+                <header class="module-header">
+                    <h2>Gear & Maintenance</h2>
+                    <p>Verwalte deine Ausrüstung und behalte den Service-Status im Blick.</p>
+                </header>
+                <div class="dashboard-grid" id="gear-stats-grid" style="margin-bottom: 32px;">
+                    <div class="stat-card glass-panel">
+                        <h3>Gesamtwert Gear</h3>
+                        <div class="value" id="gear-total-value">-- €</div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <h3>Service fällig</h3>
+                        <div class="value highlight-warn" id="gear-service-count">0</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel" style="padding: 24px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h3>Meine Ausrüstung</h3>
+                        <button class="btn-primary" onclick="openGearModal()">+ Item hinzufügen</button>
+                    </div>
+
+                    <div id="gear-inventory-grid"
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                        <!-- Gear cards will be injected here -->
+                    </div>
+                </div>
+            </section>
+
+            <section id="module-buddy" class="module-section">
+                <header class="module-header">
+                    <h2>Buddy & Sync</h2>
+                    <p>Verwalte deine Dive-Buddies und lass deine Tauchgänge digital signieren.</p>
+                </header>
+
+                <div id="buddy-no-selection" class="glass-panel"
+                    style="text-align: center; padding: 40px; margin-bottom: 32px;">
+                    <p style="color: var(--clr-text-muted);">Wähle einen Tauchgang im Dashboard aus, um ihn signieren zu
+                        lassen.</p>
+                </div>
+
+                <div id="buddy-detail-content" style="display: none; margin-bottom: 32px;">
+                    <div class="glass-panel" style="padding: 32px; border: 1px solid var(--clr-accent);">
+                        <h3>Digitaler Stempel: <span id="buddy-active-dive-title">--</span></h3>
+                        <p style="color: var(--clr-text-muted); font-size: 0.9rem; margin-top: 8px;">Dein Buddy kann
+                            hier direkt auf dem Display unterschreiben.</p>
+
+                        <div
+                            style="margin-top: 24px; position: relative; background: white; border-radius: 12px; height: 200px; width: 100%; overflow: hidden; cursor: crosshair;">
+                            <canvas id="signature-pad" style="width: 100%; height: 100%;"></canvas>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; margin-top: 16px;">
+                            <button class="btn-primary" onclick="saveSignature()" style="flex: 1;">Signatur
+                                speichern</button>
+                            <button class="btn-primary" onclick="clearSignature()"
+                                style="background: transparent; border: 1px solid var(--clr-warning); color: var(--clr-warning); flex: 1;">Löschen</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-bottom: 32px;">
+                    <div class="glass-panel" style="flex: 1; padding: 24px; text-align: center;">
+                        <h4>🔗 Sync via QR</h4>
+                        <div id="buddy-qr-mock"
+                            style="width: 120px; height: 120px; background: white; margin: 16px auto; padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <span style="font-size: 3rem;">📱</span>
+                        </div>
+                        <p style="font-size: 0.8rem; color: var(--clr-text-muted);">Lass deinen Buddy diesen Code
+                            scannen, um die Tauchgangsdaten zu synchronisieren.</p>
+                    </div>
+                    <div class="glass-panel" style="flex: 1; padding: 24px;">
+                        <h3>Meine Buddies</h3>
+                        <div id="buddy-list-grid" style="margin-top: 16px;">
+                            <!-- Buddy items -->
+                        </div>
+                        <button class="btn-primary" style="width: 100%; margin-top: 24px; font-size: 0.85rem;"
+                            onclick="addBuddy()">+ Buddy hinzufügen</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="module-planning" class="module-section">
+                <header class="module-header">
+                    <h2>Tauchgangsplanung</h2>
+                    <p>Berechne die MOD für Nitrox, deine SAC-Rate und den benötigten Ballast.</p>
+                </header>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+                    <!-- MOD Calculator -->
+                    <div class="glass-panel" style="padding: 24px;">
+                        <h3>Nitrox MOD-Rechner</h3>
+                        <p style="font-size: 0.85rem; color: var(--clr-text-muted); margin-bottom: 12px;">Maximum Operating Depth</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="plan-o2">% Sauerstoff (EANx)</label>
+                                <input type="number" id="plan-o2" class="form-control" value="32" min="21" max="40">
+                            </div>
+                            <div class="form-group">
+                                <label for="plan-po2">Max pO2 (bar)</label>
+                                <select id="plan-po2" class="form-control">
+                                    <option value="1.4" selected>1.4 (Sicher)</option>
+                                    <option value="1.6">1.6 (Deko)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button id="btn-calc-mod" type="button" class="btn-primary" style="width: 100%; margin-top: 12px;">MOD Berechnen</button>
+                        <div id="plan-result" class="calc-result-box" style="display: none; margin-top: 16px;"></div>
+                    </div>
+
+                    <!-- SAC Rate Calculator -->
+                    <div class="glass-panel" style="padding: 24px;">
+                        <h3>SAC-Rate (Verbrauch)</h3>
+                        <p style="font-size: 0.85rem; color: var(--clr-text-muted); margin-bottom: 12px;">Oberflächen-Atemfrequenz</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="plan-sac-depth">Geplante Tiefe (m)</label>
+                                <input type="number" id="plan-sac-depth" class="form-control" value="20">
+                            </div>
+                            <div class="form-group">
+                                <label for="plan-sac-time">Zeit (min)</label>
+                                <input type="number" id="plan-sac-time" class="form-control" value="45">
+                            </div>
+                        </div>
+                        <button id="btn-calc-gas" type="button" class="btn-primary" style="width: 100%; margin-top: 12px;">Gasbedarf berechnen</button>
+                        <div id="sac-result" class="calc-result-box" style="display: none; margin-top: 16px;"></div>
+                        <p id="sac-info-text" style="font-size: 0.75rem; color: var(--clr-accent); margin-top: 8px; font-style: italic; opacity: 0.8;"></p>
+                    </div>
+
+                    <!-- Ballast Calculator -->
+                    <div class="glass-panel" style="padding: 24px;">
+                        <h3>Ballast-Rechner</h3>
+                        <p style="font-size: 0.85rem; color: var(--clr-text-muted); margin-bottom: 12px;">Empfohlene Bleimenge</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="plan-suit">Anzug</label>
+                                <select id="plan-suit" class="form-control">
+                                    <option value="3">Shorty (3mm)</option>
+                                    <option value="5">Nassanzug (5mm)</option>
+                                    <option value="7" selected>Nassanzug (7mm)</option>
+                                    <option value="10">Trockenanzug</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="plan-water">Wasser</label>
+                                <select id="plan-water" class="form-control">
+                                    <option value="salt" selected>Salzwasser</option>
+                                    <option value="fresh">Süßwasser</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button id="btn-calc-weight" type="button" class="btn-primary" style="width: 100%; margin-top: 12px;">Blei schätzen</button>
+                        <div id="weight-result" class="calc-result-box" style="display: none; margin-top: 16px;"></div>
+                    </div>
+
+                    <!-- NDL Planner -->
+                    <div class="glass-panel" style="padding: 24px;">
+                        <h3>Nullzeit (NDL) Check</h3>
+                        <p style="font-size: 0.85rem; color: var(--clr-text-muted); margin-bottom: 12px;">Basierend auf Luft/Nitrox</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="plan-ndl-depth">Tiefe (m)</label>
+                                <input type="number" id="plan-ndl-depth" class="form-control" value="18" min="10" max="40">
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: flex-end;">
+                                <button id="btn-calc-ndl" type="button" class="btn-primary" style="width: 100%;">NDL Prüfen</button>
+                            </div>
+                        </div>
+                        <div id="ndl-result" class="calc-result-box" style="display: none; margin-top: 16px;"></div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 32px; padding: 16px; border: 1px dashed var(--clr-warning); border-radius: 12px; background: rgba(255,127,80,0.05);">
+                    <p style="font-size: 0.85rem; color: var(--clr-warning); line-height: 1.5;">
+                        <strong>⚠️ SICHERHEITSHINWEIS:</strong> Diese Rechner dienen nur zur Orientierung und ersetzen keine professionelle Tauchgangsplanung mit zertifizierten Tabellen oder Tauchcomputern. Tauchen mit Nitrox erfordert eine Spezialausbildung. Plane konservativ (Stay Mindful!).
+                    </p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modal Formular: Gear Management -->
+    <div id="gear-modal" class="modal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2>Ausrüstung hinzufügen</h2>
+                <button class="close-btn" onclick="closeGearModal()">&times;</button>
+            </div>
+            <form id="gear-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="gear-name">Bezeichnung (z.B. Scubapro MK25)</label>
+                        <input type="text" id="gear-name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="gear-type">Kategorie</label>
+                        <select id="gear-type" class="form-control">
+                            <option value="Atemregler">💨 Atemregler</option>
+                            <option value="BCD / Jacket">🦺 BCD / Jacket</option>
+                            <option value="Tauchcomputer">⌚ Tauchcomputer</option>
+                            <option value="Tauchanzug">🧥 Tauchanzug</option>
+                            <option value="Flasche">🍼 Flasche</option>
+                            <option value="Zubehör">🛠️ Zubehör</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="gear-purchase">Kaufdatum</label>
+                        <input type="date" id="gear-purchase" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="gear-price">Preis (€)</label>
+                        <input type="number" id="gear-price" class="form-control" placeholder="0">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="gear-service-limit">Service-Intervall (Dives)</label>
+                        <input type="number" id="gear-service-limit" class="form-control" value="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="gear-last-service">Letzter Service (Dive #)</label>
+                        <input type="number" id="gear-last-service" class="form-control" value="0">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 16px;">Speichern</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Formular: Basic Log -->
+    <div id="log-modal" class="modal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2>Neuen Tauchgang loggen</h2>
+                <button class="close-btn" onclick="document.getElementById('log-modal').classList.remove('active')">&times;</button>
+            </div>
+            <div class="modal-scroll-area">
+                <form id="basic-log-form">
+                    <!-- Standard Fields with IDs for toggling -->
+                    <div class="form-row log-field-group" data-field="date">
+                        <div class="form-group">
+                            <label for="log-date">Datum & Zeit</label>
+                            <input type="datetime-local" id="log-date" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-row log-field-group" data-field="location">
+                        <div class="form-group">
+                            <label for="log-location">Tauchplatz (Location)</label>
+                            <input type="text" id="log-location" class="form-control" placeholder="z.B. Blue Hole, Dahab"
+                                required>
+                        </div>
+                    </div>
+                    <div class="form-row log-field-group" data-field="geo">
+                        <div class="form-group">
+                            <label for="log-lat">Breitengrad (Lat)</label>
+                            <input type="number" step="0.000001" id="log-lat" class="form-control"
+                                placeholder="z.B. 28.123">
+                        </div>
+                        <div class="form-group">
+                            <label for="log-lng">Längengrad (Lng)</label>
+                            <input type="number" step="0.000001" id="log-lng" class="form-control"
+                                placeholder="z.B. 34.123">
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: flex-end;">
+                            <button type="button" class="btn-primary" style="font-size: 0.8rem; padding: 10px;"
+                                onclick="getCurrentPosition()">📍 Mein Standort</button>
+                        </div>
+                    </div>
+                    <div class="form-row log-field-group" data-field="stats">
+                        <div class="form-group">
+                            <label for="log-depth">Max. Tiefe (m)</label>
+                            <input type="number" step="0.1" id="log-depth" class="form-control" placeholder="0.0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="log-duration">Dauer (Minuten)</label>
+                            <input type="number" id="log-duration" class="form-control" placeholder="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="log-temp">Wasser-Temperatur (°C)</label>
+                            <input type="number" step="0.1" id="log-temp" class="form-control" placeholder="0.0">
+                        </div>
+                    </div>
+
+                    <h3 class="form-section-title log-field-group" data-field="gas">Gas & Verbrauch</h3>
+                    <div class="form-row log-field-group" data-field="gas">
+                        <div class="form-group">
+                            <label for="log-gas">Atemgas</label>
+                            <select id="log-gas" class="form-control" required>
+                                <option value="Pressluft">💨 Pressluft (21%)</option>
+                                <option value="Nitrox">🟡 Nitrox (EANx)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="group-nitrox-o2" style="display: none;">
+                            <label for="log-nitrox-o2">Sauerstoff (%)</label>
+                            <input type="number" id="log-nitrox-o2" class="form-control" value="32" min="22" max="100">
+                        </div>
+                    </div>
+                    <div class="form-row log-field-group" data-field="pressure">
+                        <div class="form-group">
+                            <label for="log-pressure-start">Druck Start (bar)</label>
+                            <input type="number" id="log-pressure-start" class="form-control" placeholder="z.B. 200"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label for="log-pressure-end">Druck Ende (bar)</label>
+                            <input type="number" id="log-pressure-end" class="form-control" placeholder="z.B. 50" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="log-tank-size">Flasche (L)</label>
+                            <select id="log-tank-size" class="form-control">
+                                <option value="10">10 L</option>
+                                <option value="12" selected>12 L</option>
+                                <option value="15">15 L</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <h3 class="form-section-title log-field-group" data-field="equipment">Ausrüstung & Bedingungen</h3>
+                    <div class="form-row log-field-group" data-field="equipment">
+                        <div class="form-group">
+                            <label for="log-suit">Anzug</label>
+                            <input list="suit-types" id="log-suit" class="form-control" placeholder="Typ...">
+                            <datalist id="suit-types">
+                                <option value="Shorty 3mm">
+                                <option value="Nass 5mm">
+                                <option value="Trockenanzug">
+                            </datalist>
+                        </div>
+                        <div class="form-group">
+                            <label for="log-weight">Blei (kg)</label>
+                            <input type="number" step="0.5" id="log-weight" class="form-control" placeholder="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row log-field-group" data-field="equipment">
+                        <div class="form-group">
+                            <label for="log-water">Wasser</label>
+                            <select id="log-water" class="form-control">
+                                <option value="Salzwasser">🌊 Salzwasser</option>
+                                <option value="Süßwasser">💧 Süßwasser</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="log-entry">Einstieg</label>
+                            <select id="log-entry" class="form-control">
+                                <option value="Boot">🛳️ Boot</option>
+                                <option value="Land">🏖️ Land</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group log-field-group" data-field="visibility" style="margin-bottom: 24px;">
+                        <label>Sichtweite</label>
+                        <div class="mood-selector" id="visibility-selector">
+                            <label class="mood-icon">
+                                <input type="radio" name="log-visibility" value="poor">
+                                <span>🌫️</span>
+                            </label>
+                            <label class="mood-icon">
+                                <input type="radio" name="log-visibility" value="ok" checked>
+                                <span>🙂</span>
+                            </label>
+                            <label class="mood-icon">
+                                <input type="radio" name="log-visibility" value="good">
+                                <span>🤩</span>
+                            </label>
+                            <label class="mood-icon">
+                                <input type="radio" name="log-visibility" value="crystal">
+                                <span>💎</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row log-field-group" data-field="visibility" style="margin-bottom: 24px;">
+                        <div class="form-group checkbox-group">
+                            <label class="custom-checkbox">
+                                <input type="checkbox" id="log-current">
+                                <span class="checkmark"></span>
+                                Strömung vorhanden
+                            </label>
+                        </div>
+                    </div>
+
+                <h3 class="form-section-title">Mindful / Mental Tracker</h3>
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label>Stimmung</label>
+                    <div class="mood-selector">
+                        <label class="mood-icon">
+                            <input type="radio" name="log-mood" value="1">
+                            <span>😫</span>
+                        </label>
+                        <label class="mood-icon">
+                            <input type="radio" name="log-mood" value="2">
+                            <span>😕</span>
+                        </label>
+                        <label class="mood-icon">
+                            <input type="radio" name="log-mood" value="3" checked>
+                            <span>😊</span>
+                        </label>
+                        <label class="mood-icon">
+                            <input type="radio" name="log-mood" value="4">
+                            <span>🤩</span>
+                        </label>
+                        <label class="mood-icon">
+                            <input type="radio" name="log-mood" value="5">
+                            <span>🧘</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Stress Pre (1-10)</label>
+                        <p class="field-info">Wie gestresst warst du vor dem Dive? (1=Tiefenentspannt, 10=Panik)</p>
+                        <input type="range" id="log-stress-pre" class="form-control" min="1" max="10" value="3">
+                    </div>
+                    <div class="form-group">
+                        <label>Stress Post (1-10)</label>
+                        <p class="field-info">Wie fühlst du dich direkt nach dem Auftauchen?</p>
+                        <input type="range" id="log-stress-post" class="form-control" min="1" max="10" value="1">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Flow / Fokus (1-10)</label>
+                        <p class="field-info">Warst du "Eins mit dem Wasser"? (Der sogenannte Flow-Zustand)</p>
+                        <input type="range" id="log-flow" class="form-control" min="1" max="10" value="8">
+                    </div>
+                    <div class="form-group">
+                        <label>Puls (BPM)</label>
+                        <p class="field-info">Optional: Durchschnittlicher Puls laut Computer.</p>
+                        <input type="number" id="log-heart-rate" class="form-control" placeholder="BPM">
+                    </div>
+                </div>
+
+                    <!-- Strömung moved above -->
+
+                    <!-- Container for Custom Fields -->
+                    <div id="custom-fields-container"></div>
+
+                    <button type="submit" class="btn-primary" style="width: 100%; margin: 24px 0;">Log speichern</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bubbles Animation Background -->
+    <div class="bubbles">
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+    </div>
+
+    <!-- Leaflet Maps JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Supabase Client -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
