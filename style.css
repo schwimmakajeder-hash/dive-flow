@@ -89,9 +89,29 @@ body {
     margin: 24px 0 24px 24px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start; /* Changed from space-between to allow scrolling */
     padding: 32px 24px;
     transition: all 0.4s ease;
+    overflow-y: auto; /* Enable vertical scrolling */
+    max-height: calc(100vh - 48px);
+}
+
+/* Custom Scrollbar for Sidebar */
+.sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: var(--clr-accent-dim);
+    border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: var(--clr-accent);
 }
 
 @media (max-width: 991px) {
@@ -151,6 +171,7 @@ ul.nav-links {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    margin-bottom: 32px; /* Space before user profile */
 }
 
 @media (max-width: 991px) {
