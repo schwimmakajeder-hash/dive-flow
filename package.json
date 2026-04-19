@@ -1,0 +1,14 @@
+{
+  "name": "dive-flow",
+  "version": "1.0.0",
+  "description": "Modulares Tauchlogbuch mit AI-Funktionen",
+  "main": "index.html",
+  "scripts": {
+    "start": "vercel dev",
+    "deploy": "vercel"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vercel": "latest"
+  }
+}
