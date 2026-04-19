@@ -146,25 +146,31 @@ body {
 
 ul.nav-links {
     list-style: none;
-    display: flex;
-    flex-direction: row;
-    gap: 4px;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center;
+    gap: 12px;
     margin: 0;
-    padding: 6px;
+    padding: 0 20px;
     flex: 1;
     justify-content: center;
     overflow-x: auto;
+    white-space: nowrap;
     scrollbar-width: none;
 }
 
+ul.nav-links::-webkit-scrollbar {
+    display: none;
+}
+
 .nav-links li {
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
     align-items: center;
     justify-content: center;
     gap: 4px;
     cursor: pointer;
-    padding: 10px 20px;
+    padding: 8px 16px;
     border-radius: 16px;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     font-size: 0.75rem;
@@ -172,6 +178,8 @@ ul.nav-links {
     color: var(--clr-text-muted);
     white-space: nowrap;
     border: 1px solid transparent;
+    height: 70px;
+    min-width: 90px;
 }
 
 .nav-links li:hover {
