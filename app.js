@@ -882,7 +882,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Suggestions with Images
         if (data.suggestions && data.suggestions.length > 0) {
             const sTitle = document.createElement('h5');
-            sTitle.style.marginTop = '20px';
+            sTitle.style.marginTop = '24px';
+            sTitle.style.marginBottom = '12px';
             sTitle.innerText = data.identified ? "Identifizierte Spezies:" : "Mögliche Kandidaten:";
             container.appendChild(sTitle);
 
@@ -892,20 +893,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 const card = document.createElement('div');
                 card.className = `suggestion-card ${data.identified && s.name.includes(data.name) ? 'active' : ''}`;
                 
-                const imgUrl = `https://loremflickr.com/320/240/underwater,${encodeURIComponent(s.name.split('(')[0].trim())}`;
+                const imgUrl = `https://loremflickr.com/400/300/underwater,${encodeURIComponent(s.name.split('(')[0].trim())}`;
                 card.innerHTML = `
                     <img src="${imgUrl}" alt="${s.name}" onerror="this.src='https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=200&auto=format&fit=crop'">
                     <div class="suggestion-name">${s.name}</div>
                 `;
                 
                 card.onclick = () => {
-                    if (confirm(`Ist es ein(e) ${s.name}?`)) {
-                        finalizeIdentification(s.name);
-                    }
+                    finalizeIdentification(s.name);
                 };
                 grid.appendChild(card);
             });
             container.appendChild(grid);
+        }
+
+        // Response Input Field
+        if (!data.identified) {
+            const inputGroup = document.createElement('div');
+            inputGroup.style.marginTop = '24px';
+            inputGroup.style.display = 'flex';
+            inputGroup.style.gap = '10px';
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-control';
+            input.placeholder = 'Deine Antwort oder weitere Details...';
+            input.style.flex = '1';
+            
+            const sendBtn = document.createElement('button');
+            sendBtn.className = 'btn-primary';
+            sendBtn.innerText = 'Senden';
+            sendBtn.style.padding = '8px 20px';
+            
+            const submitResponse = () => {
+                const val = input.value.trim();
+                if (val) {
+                    activeIdentifyContext.push({ role: 'assistant', content: data.message });
+                    activeIdentifyContext.push({ role: 'user', content: val });
+                    resDiv.innerHTML = '<p style="color: var(--clr-accent);">🌀 Analysiere deine Antwort...</p>';
+                    performIdentifyStep();
+                }
+            };
+
+            sendBtn.onclick = submitResponse;
+            input.onkeypress = (e) => { if(e.key === 'Enter') submitResponse(); };
+            
+            inputGroup.appendChild(input);
+            inputGroup.appendChild(sendBtn);
+            container.appendChild(inputGroup);
         }
 
         resDiv.appendChild(container);
@@ -948,34 +983,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function renderPokedexResult(data, container) {
-        // Deep integration: Instead of AI text, we fetch real data from the Internet (Wikipedia)
-        let finalDescription = data.description;
-        try {
-            const wikiResp = await fetch(`https://de.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(data.name)}`);
-            const wikiData = await wikiResp.json();
-            if (wikiData.extract) {
-                finalDescription = wikiData.extract;
-                data.wikiUrl = wikiData.content_urls.desktop.page;
-            }
-        } catch (err) { console.warn("Wikipedia fetch failed, using AI fallback."); }
+        // Prepare Internet Photo
+        const speciesSearchTerm = data.name.split('(')[0].trim();
+        const animalImg = `https://loremflickr.com/800/600/underwater,${encodeURIComponent(speciesSearchTerm)}`;
+        const fallbackImg = `https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=600&auto=format&fit=crop`;
 
-        data.description = finalDescription; // Overwriting with "Internet-sourced" data
-        
-        const animalImg = `https://loremflickr.com/320/240/underwater,${encodeURIComponent(data.name || 'fish')}`;
-        const fallbackImg = `https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=400&auto=format&fit=crop`;
-        
         container.innerHTML = `
-            <div style="display: flex; gap: 16px; align-items: flex-start; padding: 10px; animation: fadeIn 0.4s ease;">
-                <img src="${animalImg}" class="pokedex-img-preview" alt="Species" 
-                     onerror="this.onerror=null; this.src='${fallbackImg}';">
-                <div style="flex: 1;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h4 style="color: var(--clr-accent); margin-bottom: 2px; font-size: 1.1rem;">${data.name}</h4>
-                        ${data.wikiUrl ? `<a href="${data.wikiUrl}" target="_blank" style="font-size: 0.65rem; color: var(--clr-accent);">🌐 Wikipedia</a>` : ''}
+            <div class="pokedex-final-result" style="animation: fadeIn 0.6s ease;">
+                <div class="result-image-container" style="position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 24px; border: 1px solid var(--clr-accent-dim);">
+                    <img src="${animalImg}" style="width: 100%; display: block;" alt="${data.name}" onerror="this.src='${fallbackImg}'">
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(10,25,47,0.9)); padding: 20px;">
+                        <h3 style="color: var(--clr-accent); font-size: 1.8rem; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">${data.name}</h3>
                     </div>
-                    <p class="pokedex-tiny-desc" style="max-height: 80px; overflow-y: auto;">${data.description}</p>
-                    <p style="font-size: 0.75rem; margin-top: 6px; font-style: italic; color: var(--clr-text-muted);">💡 ${data.advice}</p>
-                    <button class="btn-primary form-control-sm" style="margin-top: 10px;" id="btn-save-species">✅ Zum Log speichern</button>
+                </div>
+
+                <div class="result-details" style="padding: 0 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h4 style="color: var(--clr-text-main); font-size: 1.1rem;">📝 Beschreibung</h4>
+                        ${data.wikiUrl ? `<a href="${data.wikiUrl}" target="_blank" class="identify-btn" style="text-decoration: none;">🌐 Wikipedia</a>` : ''}
+                    </div>
+                    <p style="line-height: 1.6; color: var(--clr-text-muted); font-size: 0.95rem; margin-bottom: 24px;">${data.description}</p>
+                    
+                    <div style="background: rgba(100, 255, 218, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--clr-accent-dim);">
+                        <strong style="color: var(--clr-accent); display: block; margin-bottom: 8px;">💡 Hinweise für Taucher:</strong>
+                        <p style="font-size: 0.9rem; font-style: italic;">${data.advice}</p>
+                    </div>
+
+                    <button class="btn-primary" style="width: 100%; margin-top: 24px; padding: 14px;" id="btn-save-species">
+                        ✅ Diesen Fund im Logbuch speichern
+                    </button>
                 </div>
             </div>
         `;
