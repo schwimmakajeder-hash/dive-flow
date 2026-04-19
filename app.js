@@ -948,15 +948,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function finalizeIdentification(speciesName) {
         const resDiv = document.getElementById('pokedex-result');
-        resDiv.innerHTML = '<p style="color: var(--clr-accent);">✅ Identifiziert! Lade deutsche Details...</p>';
+        resDiv.innerHTML = '<p style="color: var(--clr-accent);">✅ Identifiziert! Lade Bilder und deutsche Details...</p>';
         
         const pureName = speciesName.split('(')[0].trim();
-        const data = { name: speciesName, description: '', advice: '' };
+        const data = { name: speciesName, description: '', advice: '', images: [] };
         
         try {
-            // Fetch German Details from AI to ensure consistency and language
+            // Fetch German Details from AI
             const aiPrompt = `Beschreibe das Meereslebewesen "${speciesName}" ausführlich auf DEUTSCH. 
-            Gib zusätzlich einen kurzen Tipp/Hinweis für Taucher (z.B. Verhalten, Giftigkeit, Seltenheit).
+            Gib zusätzlich einen kurzen Tipp/Hinweis für Taucher.
             Antworte als JSON: { "description": "...", "advice": "..." }`;
             
             const aiResp = await fetch('/api/scan', { 
@@ -966,13 +966,25 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const aiData = await aiResp.json();
             
-            // Try Wikipedia for a more "official" description, but keep AI advice
+            // Try Wikipedia for official description
             const wikiResp = await fetch(`https://de.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pureName)}`);
             const wikiData = await wikiResp.json();
             
             data.description = wikiData.extract || aiData.description || "Keine Beschreibung verfügbar.";
             data.advice = aiData.advice || "Keine besonderen Hinweise.";
             if (wikiData.content_urls) data.wikiUrl = wikiData.content_urls.desktop.page;
+            
+            // Prepare multiple images from internet
+            // Using different search terms or just different random seeds to simulate "results"
+            data.images = [
+                `https://loremflickr.com/800/600/underwater,${encodeURIComponent(pureName)}?lock=1`,
+                `https://loremflickr.com/800/600/underwater,${encodeURIComponent(pureName)}?lock=2`,
+                `https://loremflickr.com/800/600/underwater,${encodeURIComponent(pureName)}?lock=3`,
+                `https://loremflickr.com/800/600/ocean,${encodeURIComponent(pureName)}?lock=4`,
+                `https://loremflickr.com/800/600/sea,${encodeURIComponent(pureName)}?lock=5`,
+                `https://loremflickr.com/800/600/fish,${encodeURIComponent(pureName)}?lock=6`
+            ];
+            data.selectedImage = data.images[0]; // Default selection
             
         } catch (err) {
             data.description = "Details konnten nicht geladen werden.";
@@ -983,23 +995,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function renderPokedexResult(data, container) {
-        // Prepare Internet Photo
-        const speciesSearchTerm = data.name.split('(')[0].trim();
-        const animalImg = `https://loremflickr.com/800/600/underwater,${encodeURIComponent(speciesSearchTerm)}`;
         const fallbackImg = `https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=600&auto=format&fit=crop`;
 
         container.innerHTML = `
             <div class="pokedex-final-result" style="animation: fadeIn 0.6s ease;">
-                <div class="result-image-container" style="position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 24px; border: 1px solid var(--clr-accent-dim);">
-                    <img src="${animalImg}" style="width: 100%; display: block;" alt="${data.name}" onerror="this.src='${fallbackImg}'">
+                <div class="result-image-container" id="main-image-display" style="position: relative; border-radius: 16px; overflow: hidden; margin-bottom: 24px; border: 1px solid var(--clr-accent-dim); height: 300px;">
+                    <img src="${data.selectedImage}" style="width: 100%; height: 100%; object-fit: cover;" alt="${data.name}" onerror="this.src='${fallbackImg}'">
                     <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(10,25,47,0.9)); padding: 20px;">
                         <h3 style="color: var(--clr-accent); font-size: 1.8rem; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">${data.name}</h3>
                     </div>
                 </div>
 
+                <div style="margin-bottom: 32px;">
+                    <h5 style="color: var(--clr-text-main); margin-bottom: 12px;">📸 Wähle das beste Foto aus dem Internet:</h5>
+                    <div class="pokedex-gallery">
+                        ${data.images.map((img, idx) => `
+                            <div class="gallery-item ${img === data.selectedImage ? 'selected' : ''}" onclick="window.selectPokedexImage('${img}', this)">
+                                <img src="${img}" onerror="this.src='${fallbackImg}'">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
                 <div class="result-details" style="padding: 0 10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <h4 style="color: var(--clr-text-main); font-size: 1.1rem;">📝 Beschreibung</h4>
+                        <h4 style="color: var(--clr-text-main); font-size: 1.1rem;">📝 Beschreibung (Wikipedia)</h4>
                         ${data.wikiUrl ? `<a href="${data.wikiUrl}" target="_blank" class="identify-btn" style="text-decoration: none;">🌐 Wikipedia</a>` : ''}
                     </div>
                     <p style="line-height: 1.6; color: var(--clr-text-muted); font-size: 0.95rem; margin-bottom: 24px;">${data.description}</p>
@@ -1010,11 +1030,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
 
                     <button class="btn-primary" style="width: 100%; margin-top: 24px; padding: 14px;" id="btn-save-species">
-                        ✅ Diesen Fund im Logbuch speichern
+                        ✅ Gewähltes Foto & Infos im Logbuch speichern
                     </button>
                 </div>
             </div>
         `;
+
+        // Global function to handle image selection
+        window.selectPokedexImage = (url, el) => {
+            data.selectedImage = url;
+            // Update UI
+            document.querySelectorAll('.gallery-item').forEach(item => item.classList.remove('selected'));
+            el.classList.add('selected');
+            const mainImg = document.querySelector('#main-image-display img');
+            if (mainImg) mainImg.src = url;
+        };
 
         document.getElementById('btn-save-species').onclick = () => saveSpeciesToDive(data);
     }
@@ -1038,14 +1068,25 @@ document.addEventListener('DOMContentLoaded', () => {
             listDiv.innerHTML += '<p style="font-size: 0.8rem; color: var(--clr-text-muted);">Noch keine Tiere gespeichert.</p>';
             return;
         }
+        
+        const galleryGrid = document.createElement('div');
+        galleryGrid.style.display = 'grid';
+        galleryGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(100px, 1fr))';
+        galleryGrid.style.gap = '12px';
+        galleryGrid.style.marginTop = '12px';
+        
         log.species.forEach(s => {
-            listDiv.innerHTML += `
-                <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(100,255,218,0.1); padding: 4px 10px; border-radius: 12px; margin: 4px; font-size: 0.8rem; border: 1px solid var(--clr-accent-dim);">
-                    <span>${s.visual || '🐠'}</span>
-                    <strong>${s.name}</strong>
+            const item = document.createElement('div');
+            item.style.textAlign = 'center';
+            item.innerHTML = `
+                <div style="width: 100%; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--clr-accent-dim); margin-bottom: 4px;">
+                    <img src="${s.selectedImage}" style="width: 100%; height: 100%; object-fit: cover;">
                 </div>
+                <div style="font-size: 0.7rem; font-weight: 600; color: var(--clr-accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${s.name}</div>
             `;
+            galleryGrid.appendChild(item);
         });
+        listDiv.appendChild(galleryGrid);
     }
 
     // --- Gear & Buddies ---
