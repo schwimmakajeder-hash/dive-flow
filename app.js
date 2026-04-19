@@ -507,22 +507,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderDiveList() {
-        const list = document.getElementById('dive-list');
-        if (!list) return;
-        list.innerHTML = '';
-        diveLogs.forEach(log => {
-            const div = document.createElement('div');
-            div.className = `dive-item glass-panel ${selectedDiveId === log.id ? 'selected' : ''}`;
-            div.onclick = () => selectDive(log.id);
-            div.innerHTML = `
-                <div style="display: flex; justify-content: space-between;">
-                    <strong>${log.location}</strong>
-                    <span style="color: var(--clr-accent);">${log.depth}m / ${log.duration}min</span>
+        const container = document.getElementById('dive-list-sidebar');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        if (diveLogs.length === 0) {
+            container.innerHTML = '<p style="font-size:0.8rem; color:var(--clr-text-muted); text-align:center;">Keine Tauchgänge gefunden.</p>';
+            return;
+        }
+
+        diveLogs.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(log => {
+            const item = document.createElement('div');
+            item.className = `sidebar-dive-item ${selectedDiveId === log.id ? 'selected' : ''}`;
+            
+            const dateStr = new Date(log.date).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' });
+            
+            item.innerHTML = `
+                <div class="date">${dateStr}</div>
+                <div class="loc">${log.location}</div>
+                <div style="font-size: 0.7rem; margin-top: 4px; opacity: 0.8;">
+                    ${log.depth}m | ${log.duration}min | ${getMoodEmoji(log.mood)}
                 </div>
-                <div style="font-size: 0.8rem; color: var(--clr-text-muted); margin-top: 4px;">${new Date(log.date).toLocaleString()}</div>
             `;
-            list.appendChild(div);
+            
+            item.onclick = () => selectDive(log.id);
+            container.appendChild(item);
         });
+    }
+
+    const btnAddSidebar = document.getElementById('btn-add-dive-sidebar');
+    if (btnAddSidebar) {
+        btnAddSidebar.onclick = () => {
+            selectedDiveId = null;
+            document.getElementById('log-modal').classList.add('active');
+            document.getElementById('basic-log-form').reset();
+            switchModule('module-core');
+            renderDiveList();
+        };
     }
 
     function selectDive(id) {

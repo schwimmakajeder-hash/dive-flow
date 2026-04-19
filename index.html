@@ -66,77 +66,67 @@
     </header>
 
     <div class="app-container">
-        <!-- Sidebar Navigation -->
-        <nav class="sidebar glass-panel">
+        <!-- Top Navigation Bar -->
+        <header class="top-navbar">
             <div class="brand">
-                <div class="logo-icon">
-                    <img src="logo.png" alt="Logo" style="width: 40px; height: 40px; filter: drop-shadow(0 0 8px var(--clr-accent));">
-                </div>
-                <div>
-                   <h1>DIVE-FLOW</h1>
-                   <div id="sync-status" style="font-size: 0.6rem; color: var(--clr-text-muted);">☁️ Nicht synchronisiert</div>
-                </div>
-                <div id="offline-tag" class="status-tag" style="display: none;">OFFLINE</div>
-            </div>
-            
-            <div id="auth-section" style="margin-bottom: 24px; padding: 12px; border: 1px dashed var(--clr-accent-dim); border-radius: 8px;">
-                <button id="btn-login" class="btn-primary" style="width: 100%; font-size: 0.8rem; padding: 8px;">☁️ In Cloud sichern </button>
-                <div id="user-display" style="display: none; font-size: 0.75rem; text-align: center;">
-                    <span id="user-email" style="display: block; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis;"></span>
-                    <button id="btn-logout" class="btn-primary" style="background: transparent; border: 1px solid var(--clr-warning); color: var(--clr-warning); width: 100%; font-size: 0.7rem; padding: 4px;">Abmelden</button>
-                </div>
+                <img src="logo.png" alt="Logo" style="width: 32px; height: 32px; filter: drop-shadow(0 0 6px var(--clr-accent));">
+                <h1 style="margin:0; font-size: 1.3rem;">DIVE-FLOW</h1>
             </div>
 
             <ul class="nav-links">
-                <li data-target="module-profile">
-                    <span class="icon">👤</span>
-                    <span class="text">Taucher-Profil</span>
-                </li>
                 <li class="active" data-target="module-core">
                     <span class="icon">📊</span>
-                    <span class="text">Dashboard & Basic Log</span>
+                    <span class="text">Dashboard</span>
                 </li>
                 <li data-target="module-mindful">
                     <span class="icon">🧘</span>
-                    <span class="text">Mindful & Flow</span>
+                    <span class="text">Flow</span>
                 </li>
                 <li data-target="module-species">
                     <span class="icon">🐠</span>
-                    <span class="text">Pokédex (Species)</span>
+                    <span class="text">Pokédex</span>
                 </li>
                 <li data-target="module-geo">
                     <span class="icon">🗺️</span>
-                    <span class="text">Geo & Maps</span>
+                    <span class="text">Karten</span>
                 </li>
                 <li data-target="module-gear">
                     <span class="icon">🤿</span>
-                    <span class="text">Gear & Maintenance</span>
-                </li>
-                <li data-target="module-buddy">
-                    <span class="icon">🤝</span>
-                    <span class="text">Buddy & Sync</span>
+                    <span class="text">Ausrüstung</span>
                 </li>
                 <li data-target="module-planning">
                     <span class="icon">🧭</span>
-                    <span class="text">Tauchgangsplanung</span>
-                </li>
-                <li data-target="module-system">
-                    <span class="icon">⚙️</span>
-                    <span class="text">System & Module</span>
+                    <span class="text">Planung</span>
                 </li>
             </ul>
 
-            <div class="user-profile">
-                <div class="avatar" id="sidebar-avatar"></div>
-                <div class="user-info">
-                    <span class="name" id="sidebar-user-name">Diver 01</span>
-                    <span class="title" id="sidebar-user-title">Advanced Open Water</span>
+            <div id="auth-section" style="display: flex; align-items: center; gap: 16px;">
+                <div id="user-display" style="display: none; align-items: center; gap: 12px;">
+                    <div style="text-align: right;">
+                        <div id="sidebar-user-name" style="font-weight: 600; font-size: 0.85rem;"></div>
+                        <div id="sidebar-user-title" style="font-size: 0.7rem; color: var(--clr-text-muted);"></div>
+                    </div>
+                    <div class="avatar" id="sidebar-avatar" style="width: 32px; height: 32px;"></div>
+                    <button id="btn-logout" class="btn-primary" style="padding: 6px 12px; font-size: 0.7rem; background: rgba(255,127,80,0.1); color: var(--clr-warning); border: 1px solid rgba(255,127,80,0.2);">Logout</button>
                 </div>
+                <button id="btn-login" class="btn-primary" style="padding: 8px 16px; font-size: 0.8rem;">☁️ Sync Login</button>
             </div>
-        </nav>
+        </header>
 
-        <!-- Main Content Area -->
-        <main class="content-area">
+        <div class="main-layout">
+            <!-- Sidebar: Dive List -->
+            <aside class="sidebar-left">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="font-size: 1rem; color: var(--clr-accent);">Deine Tauchgänge</h3>
+                    <button class="btn-primary" id="btn-add-dive-sidebar" style="padding: 4px 8px; font-size: 1.2rem;">+</button>
+                </div>
+                <div id="dive-list-sidebar">
+                    <!-- Dives injected here by JS -->
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="content-area">
             <!-- Module: Core Dashboard -->
             <section id="module-core" class="module-section active">
                 <header class="module-header">
@@ -643,7 +633,8 @@
                 </div>
             </section>
 
-        </main>
+            </main>
+        </div>
     </div>
 
     <!-- Modal Formular: Gear Management -->
